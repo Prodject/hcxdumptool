@@ -11,8 +11,8 @@ and check if wlan-key or plainmasterkey was transmitted unencrypted.
 Brief description
 --------------
 
-Stand-alone binary - designed to run on Raspberry Pi's with installed Arch Linux.
-It should work on other Linux systems (notebooks, desktops) and distributions, too.
+Stand-alone binaries - designed to run on Raspberry Pi's with installed Arch Linux.
+It may work on other Linux systems (notebooks, desktops) and distributions, too.
 
 
 Detailed description
@@ -21,7 +21,7 @@ Detailed description
 | Tool           | Description                                                                                            |
 | -------------- | ------------------------------------------------------------------------------------------------------ |
 | hcxdumptool    | Tool to run several tests to determine if access points or clients are vulnerable                      |
-| pioff          | Turns Raspberry Pi off via GPIO switch                                                                 |
+| hcxpioff       | Turns Raspberry Pi off via GPIO switch                                                                 |
 
 
 Compile
@@ -34,12 +34,6 @@ make
 make install (as super user)
 ```
 
-or (with GPIO support - hardware mods required)
-
-```
-make GPIOSUPPORT=on
-make GPIOSUPPORT=on install (as super user)
-```
 
 Compile for Android
 --------------
@@ -56,36 +50,71 @@ Copy it to your phone and enjoy.
 Requirements
 --------------
 
-* Operatingsystem: Arch Linux (strict), Kernel >= 4.14 (strict). It should work on other Linux systems (notebooks, desktops) and distributions, too (no support for other distributions). Don't use Kernel 4.4 (rt2x00 driver regression)
+* Operatingsystem: Arch Linux (strict), Kernel >= 4.19 (strict). It may work on other Linux systems (notebooks, desktops) and distributions, too (no support for other distributions, no support for other operating systems). Don't use Kernel 4.4 (rt2x00 driver regression)
 
-* libpthread and pthread-dev installed
+* Chipset must be able to run in monitor mode and driver must support monitor mode. Recommended: MEDIATEK (MT7601) or RALINK (RT2870, RT3070, RT5370) chipset 
 
-* Raspberry Pi: additionally libwiringpi and wiringpi dev installed (Raspberry Pi GPIO support)
+* libopenssl and openssl-dev installed
 
-* Chipset must be able to run in monitor mode (strict by: ip and iw). Recommended: RALINK chipset (good receiver sensitivity), rt2x00 driver (stable and fast)
+* Raspberry Pi A, B, A+, B+, Zero (WH). (Recommended: Zero (WH) or A+, because of a very low power consumption), but notebooks and desktops may work, too.
 
-* Raspberry Pi A, B, A+, B+ (Recommended: A+ = very low power consumption or B+), but notebooks and desktops could work, too.
+* GPIO hardware mod recommended (push button and LED).
 
-* GPIO hardware mod recommended
- 
 
-Supported adapters (strict)
+Adapters
 --------------
 
-* USB ID 148f:7601 Ralink Technology, Corp. MT7601U Wireless Adapter
+hcxdumptool need full (monitor mode and full packet injection running all packet types) and exclusive access to the adapter! Otherwise it will not start!
 
-* USB ID 148f:3070 Ralink Technology, Corp. RT2870/RT3070 Wireless Adapter
+The driver must support monitor mode and full packet injection, as well as ioctl() calls!
 
-* USB ID 148f:5370 Ralink Technology, Corp. RT5370 Wireless Adapter
+Netlink (libnl) interfaces are not supported!
 
-* USB ID 0bda:8187 Realtek Semiconductor Corp. RTL8187 Wireless Adapter
+Get information about VENDOR, model, chipset and driver here: https://wikidevi.com
 
-* USB ID 0bda:8189 Realtek Semiconductor Corp. RTL8187B Wireless 802.11g 54Mbps Network Adapter
+Manufacturers do change chipsets without changing model numbers. Sometimes they add (v)ersion or (rev)vision.
 
-* Bus 005 Device 011: ID 7392:a812 Edimax Technology Co., Ltd (Edimax AC600 USB / Manufacturer: Realtek)
-  get driver from here: https://github.com/kimocoder/rtl8812au
+This list is for information purposes only and should not be regarded as a binding presentation of the products:
 
-* Bus 001 Device 002: ID 148f:2573 Ralink Technology, Corp. RT2501/RT2573 Wireless Adapter
+| VENDOR MODEL         | ID                                                                                |
+| -------------------- | --------------------------------------------------------------------------------- |
+| EDIMAX EW-7711UAN    | ID 7392:7710 Edimax Technology Co., Ltd                                           |
+| ALLNET ALL-WA0150N   | ID 148f:7601 Ralink Technology, Corp. MT7601U Wireless Adapter                    |
+| SEMPRE WU150-1       | ID 148f:7601 Ralink Technology, Corp. MT7601U Wireless Adapter                    |
+| TP-LINK Archer T2UH  | ID 148f:761a Ralink Technology, Corp. MT7610U ("Archer T2U" 2.4G+5G WLAN Adapter) |
+| TENDA W311U+         | ID 148f:3070 Ralink Technology, Corp. RT2870/RT3070 Wireless Adapter              |
+| TP-LINK TL-WN722N v1 | ID 0cf3:9271 Qualcomm Atheros Communications AR9271 802.11n                       |
+
+Always verify the actual chipset with 'lsusb' and/or 'lspci'!
+
+Due to a bug in xhci subsystem other devices may not work at the moment: https://bugzilla.kernel.org/show_bug.cgi?id=202541
+
+No support for a third party driver which is not part of the official kernel (https://www.kernel.org/)
+
+No support for a driver which doesn't support monitor and packet injection, native - if you need this features, do a request on www.kernel.org
+
+
+Antennas
+--------------
+
+The best high frequency amplifier is a good antenna!
+
+| VENDOR MODEL           | TYPE            |
+| ---------------------- | --------------- |
+| LOGILINK WL0097        | grid parabolic  |
+| TP-LINK TL-ANT2414 A/B | panel           |
+| LevelOne WAN-1112      | panel           |
+| DELOCK 88806           | panel           |
+| TP-LINK TL-ANT2409 A   | panel           |
+
+
+GPS devices
+--------------
+
+| VENDOR MODEL                | TYPE            |
+| --------------------------- | --------------- |
+| NAVILOCK NL-701US           | USB             |
+| JENTRO BT-GPS-8 activepilot | BLUETOOTH       |
 
 
 Useful scripts
@@ -105,9 +134,11 @@ Hardware mod - see docs gpiowait.odg (hcxdumptool)
 
 LED flashes 5 times if hcxdumptool successfully started
 
-LED flashes every 5 seconds if everything is fine
+LED flashes every 5 seconds if everything is fine and signals are received
 
-Press push button at least > 5 seconds until LED turns on (LED turns on if hcxdumptool terminates)
+LED flashes twice, if no signal received during the last past 5 seconds
+
+Press push button at least > 5 seconds until LED turns on (also LED turns on if hcxdumptool terminates)
 
 Green ACT LED flashes 10 times
 
@@ -116,45 +147,100 @@ Raspberry Pi turned off and can be disconnected from power supply
 Do not use hcxdumptool and hcxpioff together!
 
 
-Hardware mod - see docs gpiowait.odg (hcxpioff)
+Hardware mod - see docs gpiowait.odg
 --------------
 
-LED flashes every 10 seconds 2 times if hcxpioff successfully started
+LED flashes every 5 seconds 2 times if hcxpioff successfully started
 
-Press push button at least > 10 seconds until LED turns on (hcxpioff will shut down Raspberry Pi safely)
+Press push button at least > 5 seconds until LED turns on
 
 Green ACT LED flashes 10 times
 
-Raspberry Pi turned off and can be disconnected from power supply
+Raspberry Pi turned off safely and can be disconnected from power supply
 
-Do not use hcxdumptool or hcxpioff together!
+Do not use hcxdumptool and hcxpioff together!
+
+
+Procedure
+--------------
+
+first run hcxdumptool -i interface --do_rcascan at least for 30 seconds
+
+to determine that the driver support monitor mode and required ioctl() calls,
+
+to determine that the driver support full packet injection,
+
+to retrieve information about access points and
+
+to determine which access points are in attack range.
+
+
+pcapng option codes (Section Header Block)
+--------------
+
+ENTERPRISE NUMBER        0x2a, 0xce, 0x46, 0xa1
+
+MAGIC NUMBER             0x2a, 0xce, 0x46, 0xa1, 0x79, 0xa0, 0x72, 0x33,
+
+                         0x83, 0x37, 0x27, 0xab, 0x59, 0x33, 0xb3, 0x62,
+
+                         0x45, 0x37, 0x11, 0x47, 0xa7, 0xcf, 0x32, 0x7f,
+
+                         0x8d, 0x69, 0x80, 0xc0, 0x89, 0x5e, 0x5e, 0x98
+
+OPTIONCODE_MACMYORIG     0xf29a (6 byte)
+
+OPTIONCODE_MACMYAP       0xf29b (6 byte)
+
+OPTIONCODE_RC            0xf29c (8 byte)
+
+OPTIONCODE_ANONCE        0xf29d (32 byte)
+
+OPTIONCODE_MACMYSTA      0xf29e (6 byte)
+
+OPTIONCODE_SNONCE        0xf29f (32 byte)
+
+OPTIONCODE_WEAKCANDIDATE 0xf2a0 (32 byte)
+
+OPTIONCODE_GPS           0xf2a1 (max 128 byte)
 
 
 Warning
 --------------
 
-You must use hcxdumptool only on networks you have permission to do this, because
+You must use hcxdumptool only on networks you have permission to do this, because:
 
 * hcxdumptool is able to prevent complete wlan traffic
+  (depend on selected options)
 
 * hcxdumptool is able to capture PMKIDs from access points (only one single PMKID from an access point required)
+  (use hcxpcaptool to save them to file)
 
 * hcxdumptool is able to capture handshakes from not connected clients (only one single M2 from the client is required)
+  (use hcxpcaptool to save them to file)
 
 * hcxdumptool is able to capture handshakes from 5GHz clients on 2.4GHz (only one single M2 from the client is required)
-
-* hcxdumptool is able to capture extended EAPOL (RADIUS, GSM-SIM, WPS)
+  (use hcxpcaptool to save them to file)
 
 * hcxdumptool is able to capture passwords from the wlan traffic
+  (use hcxpcaptool -E to save them to file, together with networknames)
 
 * hcxdumptool is able to capture plainmasterkeys from the wlan traffic
+  (use hcxpcaptool -P to save them to file)
 
-* hcxdumptool is able to capture usernames and identities from the wlan traffic
+* hcxdumptool is able to request and capture extended EAPOL (RADIUS, GSM-SIM, WPS)
+  (hcxpcaptool will show you information about them)
 
-* Do not use a logical interface and leave the physical interface in managed mode.
+* hcxdumptool is able to capture identities from the wlan traffic
+  (for example: request IMSI numbers from mobile phones - use hcxpcaptool -I to save them to file)
 
-* Do not use hcxdumptool in combination with aircrack-ng, reaver, bully or other tools which takes access to the interface.
+* hcxdumptool is able to capture usernames from the wlan traffic
+  (for example: user name of a server authentication - use hcxpcaptool -U to save them to file)
 
-* Stop all services which takes access to the physical interface (NetworkManager, wpa_supplicant,...).
+* Do not use a logical interface and leave the physical interface in managed mode
 
-* Do not use tools like macchanger, as they are useless, because hcxdumptool uses its own random mac address space.
+* Do not use hcxdumptool in combination with aircrack-ng, reaver, bully or other tools which take access to the interface
+
+* Stop all services which take access to the physical interface (NetworkManager, wpa_supplicant,...)
+
+* Do not use tools like macchanger, as they are useless, because hcxdumptool uses its own random mac address space
